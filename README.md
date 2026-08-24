@@ -16,7 +16,7 @@ Answer these two questions before installing anything.
 ### Do you already have a login page?
 
 - **No - I need a login page:** use **Path A** below. The guided setup creates ready-made `/login` and password-update pages for a Next.js App Router project.
-- **Yes - my login page/design is already ready:** use **Path B** below. **Do not run `npx webapp-login-ui`**. Keep your existing design and connect its submit button to this package's validation and authentication adapter.
+- **Yes - my login page/design is already ready:** use **Path B** below. **Do not run `npx webapp-login-ui@beta`**. Keep your existing design and connect its submit button to this package's validation and authentication adapter.
 
 ### Where are user accounts stored?
 
@@ -25,7 +25,7 @@ Answer these two questions before installing anything.
 
 | Your situation | What to use |
 | --- | --- |
-| No login page + Next.js App Router | **Path A** - run `npx webapp-login-ui` |
+| No login page + Next.js App Router | **Path A** - run `npx webapp-login-ui@beta` |
 | Ready login page + Supabase | **Path B** - use the Supabase adapter in your existing form |
 | Ready login page + existing backend | **Path B** - use the REST adapter in your existing form |
 | No Next.js App Router project | Do not run the wizard; use the manual component examples instead |
@@ -89,10 +89,10 @@ Rate limits, password hashing, session cookies, account authorization, database 
 
 ## Install
 
-After publishing the package to npm:
+While the package is in beta, install the beta channel explicitly:
 
 ```bash
-npm install webapp-login-ui @supabase/supabase-js
+npm install webapp-login-ui@beta @supabase/supabase-js
 ```
 
 Before the first npm release, install this repository after the current code has been pushed to GitHub:
@@ -183,7 +183,7 @@ The adapter uses HTTPS and includes cookies by default. Your backend must implem
 
 ## Path B: I already have a login page
 
-**Do not run `npx webapp-login-ui` for this path.** Your login page, branding, fields, and dashboard redirect remain yours. Install the package and call its validation and adapter from your existing form's submit logic. No package UI is required.
+**Do not run `npx webapp-login-ui@beta` for this path.** Your login page, branding, fields, and dashboard redirect remain yours. Install the package and call its validation and adapter from your existing form's submit logic. No package UI is required.
 
 Choose one adapter:
 
@@ -299,7 +299,7 @@ The optional [SQL template](templates/supabase/webapp-login-rls.sql) creates a s
 
 ## Setup CLI
 
-After npm publication:
+While the package is in beta:
 
 ```bash
 npx webapp-login-ui
