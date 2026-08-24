@@ -1,3 +1,6 @@
+Exit code: 0
+Wall time: 1 seconds
+Output:
 # WebApp Login UI
 
 Reusable React login UI and authentication helpers for two practical cases:
@@ -7,7 +10,30 @@ Reusable React login UI and authentication helpers for two practical cases:
 
 It supports Supabase directly and any existing backend through a documented HTTPS REST contract. It does not connect a browser directly to a database.
 
-## Start here: set up a login page without writing code
+## Choose the right path first
+
+Answer these two questions before installing anything.
+
+### Do you already have a login page?
+
+- **No — I need a login page:** use **Path A** below. The guided setup creates ready-made `/login` and password-update pages for a Next.js App Router project.
+- **Yes — my login page/design is already ready:** use **Path B** below. **Do not run `npx webapp-login-ui`**. Keep your existing design and connect its submit button to this package's validation and authentication adapter.
+
+### Where are user accounts stored?
+
+- **I do not have an authentication backend:** choose **Supabase**. It is the simplest option.
+- **I already have a backend/API and database:** choose the **custom REST adapter**. Your API stays responsible for passwords, sessions, database access, and rate limits.
+
+| Your situation | What to use |
+| --- | --- |
+| No login page + Next.js App Router | **Path A** — run `npx webapp-login-ui` |
+| Ready login page + Supabase | **Path B** — use the Supabase adapter in your existing form |
+| Ready login page + existing backend | **Path B** — use the REST adapter in your existing form |
+| No Next.js App Router project | Do not run the wizard; use the manual component examples instead |
+
+## Path A: I do not have a login page
+
+Use this path only when you need the package to create a login page for you.
 
 If you have a **Next.js App Router** project (it has an `app/` or `src/app/` folder), open a terminal in that project folder and run:
 
@@ -35,7 +61,7 @@ After you confirm, it installs the package, writes the required `.env.local` val
 - For the easiest path: a Supabase project
 - Or, for an existing database: a working HTTPS login API that follows the [custom REST contract](docs/custom-rest-contract.md)
 
-For a non-Next.js React project, use the manual integration examples below. The wizard deliberately does not guess your router or overwrite files in an unfamiliar project structure.
+For a non-Next.js React project, use the manual component examples below. The wizard deliberately does not guess your router or overwrite files in an unfamiliar project structure.
 
 ## What is included
 
@@ -82,7 +108,7 @@ Import the package stylesheet once in a client-side root layout or application e
 import 'webapp-login-ui/styles.css';
 ```
 
-## Use case 1: ready login page with Supabase
+## Path A option 1: ready login page with Supabase
 
 Create a browser Supabase client and pass it to `AuthCard`:
 
@@ -132,7 +158,7 @@ Missing, placeholder, insecure, or service-role configuration fails closed. A fa
 
 Never use `service_role` or `sb_secret_...` values in `NEXT_PUBLIC_...` variables.
 
-## Use case 1: ready login page with an existing backend
+## Path A option 2: ready login page with an existing backend
 
 For an existing database, keep database access on the application's server. Point the REST adapter at that server:
 
@@ -154,9 +180,16 @@ export default function LoginPage() {
 
 The adapter uses HTTPS and includes cookies by default. Your backend must implement the five endpoints described in the [custom REST contract](docs/custom-rest-contract.md). It must hash passwords, verify recovery sessions, enforce authorization, and rate-limit requests.
 
-## Use case 2: keep a custom login design
+## Path B: I already have a login page
 
-Use the validation and adapter directly; no package UI is required:
+**Do not run `npx webapp-login-ui` for this path.** Your login page, branding, fields, and dashboard redirect remain yours. Install the package and call its validation and adapter from your existing form's submit logic. No package UI is required.
+
+Choose one adapter:
+
+- **Supabase:** use this if Supabase stores your users.
+- **Custom REST:** use this if your own HTTPS backend stores your users; follow the [custom REST contract](docs/custom-rest-contract.md).
+
+Example with Supabase:
 
 ```tsx
 import { createClient } from '@supabase/supabase-js';
@@ -185,7 +218,17 @@ export async function signIn(email: string, password: string) {
 }
 ```
 
-For a custom backend, replace `createSupabaseAuthAdapter` with `createRestAuthAdapter`. Run the same email policy again on the server; client-side checks can be bypassed.
+For a custom backend, replace the Supabase import and `auth` setup above with this. The `signIn` function can stay the same:
+
+```tsx
+import { createRestAuthAdapter } from 'webapp-login-ui/rest';
+
+const auth = createRestAuthAdapter({
+  baseUrl: process.env.NEXT_PUBLIC_AUTH_API_URL!,
+});
+```
+
+Your backend must follow the [custom REST contract](docs/custom-rest-contract.md). Run the same email policy again on the server; client-side checks can be bypassed.
 
 ## Password recovery
 
