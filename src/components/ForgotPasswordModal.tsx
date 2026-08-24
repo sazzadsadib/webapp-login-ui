@@ -1,126 +1,164 @@
 'use client';
-import React, { useState } from 'react';
-import { Mail, ArrowRight, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/authClient';
-import { validateAndSanitizeEmail } from '../lib/emailValidator';
 
-interface ForgotPasswordModalProps {
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { AlertCircle, CheckCircle2, Loader2, Mail, X } from 'lucide-react';
+import type { AuthAdapter } from '../lib/authAdapter';
+import { resolveAuthAdapter } from '../lib/authResolver';
+import { validateAndSanitizeEmail, type EmailValidationOptions } from '../lib/emailValidator';
+
+export interface ForgotPasswordModalProps {
+  client?: SupabaseClient;
+  adapter?: AuthAdapter;
   isOpen: boolean;
   onClose: () => void;
+  redirectTo?: string;
+  emailValidation?: EmailValidationOptions;
 }
 
-export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
+export default function ForgotPasswordModal({
+  client: providedClient,
+  adapter: providedAdapter,
+  isOpen,
+  onClose,
+  redirectTo,
+  emailValidation,
+}: ForgotPasswordModalProps) {
+  const titleId = useId();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const closeAndReset = useCallback(() => {
+    setEmail('');
+    setIsSent(false);
     setErrorMsg(null);
+    setIsLoading(false);
+    onClose();
+  }, [onClose]);
 
-    // 1. Strict RFC 5322 & Header Injection & Temp-mail check
-    const validation = validateAndSanitizeEmail(email);
-    if (!validation.isValid) {
-      setErrorMsg(validation.error || 'Invalid email address');
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setIsSent(false);
+      setErrorMsg(null);
       setIsLoading(false);
       return;
     }
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    emailInputRef.current?.focus();
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeAndReset();
+        return;
+      }
+      if (event.key !== 'Tab' || !modalRef.current) return;
+
+      const focusable = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'),
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [closeAndReset, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setErrorMsg(null);
+
+    const validation = validateAndSanitizeEmail(email, emailValidation);
+    if (!validation.isValid) {
+      setErrorMsg(validation.error ?? 'Invalid email address.');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(validation.canonicalEmail, {
-        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined,
-      });
-      if (error) throw error;
-      setIsSent(true);
-    } catch (err: any) {
-      // Don't leak user existence (prevents user enumeration)
-      setIsSent(true);
+      const adapter = resolveAuthAdapter(providedAdapter, providedClient);
+      await adapter.requestPasswordReset(
+        validation.canonicalEmail,
+        redirectTo ?? (typeof window !== 'undefined' ? `${window.location.origin}/auth/update-password` : undefined),
+      );
+    } catch {
+      // Deliberately return the same result to prevent account enumeration.
     } finally {
+      setIsSent(true);
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-xl border border-sky-100 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-sky-500/10 space-y-5 relative">
-        
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-        >
-          <X className="w-4 h-4" />
+    <div className="wlu-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && closeAndReset()}>
+      <div ref={modalRef} className="wlu-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <button type="button" className="wlu-modal-close" onClick={closeAndReset} aria-label="Close password reset dialog">
+          <X aria-hidden="true" />
         </button>
 
         {isSent ? (
-          <div className="text-center space-y-4 py-4">
-            <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-[#0B2146]">Reset Instructions Sent</h3>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                If an account matches <strong className="text-slate-700">{email}</strong>, we have sent a secure password reset link to that inbox.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
-            >
-              Back to Sign In
-            </button>
+          <div className="wlu-modal-success" role="status" aria-live="polite">
+            <CheckCircle2 aria-hidden="true" />
+            <h3 id={titleId}>Check your email</h3>
+            <p>If an account matches that address, a password-reset link has been sent.</p>
+            <button type="button" className="wlu-primary-button" onClick={closeAndReset}>Back to sign in</button>
           </div>
         ) : (
           <>
-            <div className="space-y-1.5">
-              <div className="h-10 w-10 rounded-xl bg-sky-50 text-blue-600 flex items-center justify-center mb-2">
-                <Mail className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-[#0B2146] tracking-tight">Reset your password</h3>
-              <p className="text-xs text-slate-500">
-                Enter your verified email address and we will send you a recovery link.
-              </p>
+            <div className="wlu-modal-heading">
+              <Mail aria-hidden="true" />
+              <h3 id={titleId}>Reset your password</h3>
+              <p>Enter your account email and we will send a recovery link.</p>
             </div>
 
-            <form onSubmit={handleReset} className="space-y-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-[#0B2146]">Account Email</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs outline-none focus:border-blue-600 focus:bg-white text-slate-900 font-medium"
-                  />
-                </div>
+            <form onSubmit={handleReset} className="wlu-form">
+              <div className="wlu-field">
+                <label htmlFor="wlu-reset-email">Account email</label>
+                <input
+                  ref={emailInputRef}
+                  id="wlu-reset-email"
+                  type="email"
+                  required
+                  maxLength={254}
+                  autoComplete="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
               </div>
 
               {errorMsg && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="wlu-notice wlu-notice-error" role="alert">
+                  <AlertCircle aria-hidden="true" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2"
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                <span>Send Recovery Link</span>
+              <button type="submit" className="wlu-primary-button" disabled={isLoading}>
+                {isLoading && <Loader2 className="wlu-spin" aria-hidden="true" />}
+                Send recovery link
               </button>
             </form>
           </>
         )}
-
       </div>
     </div>
   );

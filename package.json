@@ -1,44 +1,114 @@
 {
-  "name": "secure-auth-kit",
+  "name": "webapp-login-ui",
   "version": "1.0.0",
-  "description": "Production-hardened, beautiful authentication UI & security engine for Next.js with Gmail canonicalization, disposable mail filter, and 1-click CLI installer.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "Reusable React login UI and security helpers with Supabase and custom HTTPS REST authentication adapters.",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./email": {
+      "types": "./dist/esm/email.d.ts",
+      "require": "./dist/cjs/email.js",
+      "import": "./dist/esm/email.js",
+      "default": "./dist/esm/email.js"
+    },
+    "./core": {
+      "types": "./dist/esm/core.d.ts",
+      "require": "./dist/cjs/core.js",
+      "import": "./dist/esm/core.js",
+      "default": "./dist/esm/core.js"
+    },
+    "./rest": {
+      "types": "./dist/esm/rest.d.ts",
+      "require": "./dist/cjs/rest.js",
+      "import": "./dist/esm/rest.js",
+      "default": "./dist/esm/rest.js"
+    },
+    "./server": {
+      "types": "./dist/esm/server.d.ts",
+      "require": "./dist/cjs/server.js",
+      "import": "./dist/esm/server.js",
+      "default": "./dist/esm/server.js"
+    },
+    "./supabase": {
+      "types": "./dist/esm/supabase.d.ts",
+      "require": "./dist/cjs/supabase.js",
+      "import": "./dist/esm/supabase.js",
+      "default": "./dist/esm/supabase.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": ["dist", "bin", "skills", "docs", "templates", "README.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md", "LICENSE"],
+  "sideEffects": ["./dist/styles.css"],
   "bin": {
-    "secure-auth-kit": "./bin/init.js"
+    "webapp-login-ui": "./bin/init.cjs"
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "clean": "node ./scripts/clean.cjs",
+    "build:lib": "tsc -p tsconfig.build.json && tsc -p tsconfig.build.cjs.json",
+    "build:styles": "node ./scripts/copy-styles.cjs",
+    "build": "npm run clean && npm run build:lib && npm run build:styles",
+    "build:demo": "next build",
     "start": "next start -p 3001",
-    "init": "node ./bin/init.js",
-    "test": "node scripts/test-security.js"
+    "init": "node ./bin/init.cjs",
+    "test": "npm run build && node --test tests/*.test.cjs",
+    "verify": "npm test && npm run build:demo",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run verify"
   },
-  "keywords": [
-    "nextjs",
-    "authentication",
-    "security",
-    "gmail-canonicalization",
-    "disposable-email-blocker",
-    "supabase-auth",
-    "oauth",
-    "react-auth-ui"
-  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sazzadsadib/secure-auth-kit.git"
+  },
+  "homepage": "https://github.com/sazzadsadib/secure-auth-kit#readme",
+  "bugs": {
+    "url": "https://github.com/sazzadsadib/secure-auth-kit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": ["nextjs", "react", "login-page", "login-ui", "authentication", "supabase", "oauth", "signup", "password-reset"],
   "author": "Abiline AI Team",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
-    "lucide-react": "^1.16.0",
-    "next": "15.5.23",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "lucide-react": "^1.16.0"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": ">=2.49.1 <3",
+    "next": ">=14 <17",
+    "react": ">=18.2 <20",
+    "react-dom": ">=18.2 <20"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.112.3",
     "@types/node": "^20.17.19",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5.4.5"
+    "next": "15.5.23",
+    "postcss": "^8.5.26",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.2"
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "sharp": "0.35.0"
   }
 }

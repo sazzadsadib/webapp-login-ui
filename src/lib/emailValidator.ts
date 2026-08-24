@@ -1,27 +1,29 @@
-// Production Email Validator & Disposable Mail Blocker
-// Includes Gmail Canonicalization (Anti Dot-Trick & Plus-Trick Sub-addressing Abuse)
-// Protects against header injection, multi-recipient commas, and disposable spam bots.
-
-const DISPOSABLE_DOMAINS = new Set([
+const DEFAULT_DISPOSABLE_DOMAINS = Object.freeze([
   '10minutemail.com',
   '10minutemail.net',
+  'crazymailing.com',
+  'dispostable.com',
+  'dropmail.me',
+  'fakeinbox.com',
+  'getairmail.com',
   'guerrillamail.com',
   'guerrillamailblock.com',
   'mailinator.com',
-  'tempmail.com',
-  'temp-mail.org',
-  'trashmail.com',
-  'yopmail.com',
-  'sharklasers.com',
-  'dispostable.com',
-  'getairmail.com',
-  'crazymailing.com',
-  'fakeinbox.com',
-  'nada.ltd',
   'mohmal.com',
   'mytemp.email',
-  'dropmail.me'
-]);
+  'nada.ltd',
+  'sharklasers.com',
+  'temp-mail.org',
+  'tempmail.com',
+  'trashmail.com',
+  'yopmail.com',
+] as const);
+
+export interface EmailValidationOptions {
+  canonicalizeGmail?: boolean;
+  blockDisposableEmail?: boolean;
+  additionalDisposableDomains?: Iterable<string>;
+}
 
 export interface EmailValidationResult {
   isValid: boolean;
@@ -30,72 +32,86 @@ export interface EmailValidationResult {
   canonicalEmail: string;
 }
 
-export function validateAndSanitizeEmail(rawEmail: string): EmailValidationResult {
-  if (!rawEmail || typeof rawEmail !== 'string') {
-    return { isValid: false, error: 'Email address is required.', sanitizedEmail: '', canonicalEmail: '' };
+function invalid(error: string, sanitizedEmail = ''): EmailValidationResult {
+  return { isValid: false, error, sanitizedEmail, canonicalEmail: '' };
+}
+
+function isBlockedDomain(domain: string, blockedDomains: Set<string>): boolean {
+  for (const blocked of blockedDomains) {
+    if (domain === blocked || domain.endsWith(`.${blocked}`)) return true;
+  }
+  return false;
+}
+
+export function validateAndSanitizeEmail(
+  rawEmail: string,
+  options: EmailValidationOptions = {},
+): EmailValidationResult {
+  if (typeof rawEmail !== 'string' || rawEmail.length === 0) {
+    return invalid('Email address is required.');
   }
 
-  // 1. Trim whitespace and lowercase
-  const sanitized = rawEmail.trim().toLowerCase();
-
-  // 2. Reject Multiple Recipient Injection (commas, semicolons, spaces, CRLF)
-  if (sanitized.includes(',') || sanitized.includes(';') || sanitized.includes(' ') || sanitized.includes('\n') || sanitized.includes('\r')) {
-    return {
-      isValid: false,
-      error: 'Invalid email format. Multiple addresses or special separators are not allowed.',
-      sanitizedEmail: sanitized,
-      canonicalEmail: sanitized
-    };
+  if (/[,;\s\r\n]/.test(rawEmail)) {
+    return invalid('Invalid email format. Whitespace, multiple addresses, and separators are not allowed.');
   }
 
-  // 3. Strict RFC 5322 standard regex (Ensures single valid mailbox)
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-  if (!emailRegex.test(sanitized)) {
-    return {
-      isValid: false,
-      error: 'Please enter a valid email address.',
-      sanitizedEmail: sanitized,
-      canonicalEmail: sanitized
-    };
+  if (rawEmail.length > 254) return invalid('Email address is too long.');
+
+  const atIndex = rawEmail.lastIndexOf('@');
+  if (atIndex <= 0 || atIndex !== rawEmail.indexOf('@')) {
+    return invalid('Please enter a valid email address.');
   }
 
-  // 4. Extract parts and check against disposable/temp-mail blocklist
-  const parts = sanitized.split('@');
-  if (parts.length !== 2) {
-    return { isValid: false, error: 'Invalid email structure.', sanitizedEmail: sanitized, canonicalEmail: sanitized };
+  const rawLocalPart = rawEmail.slice(0, atIndex);
+  const domain = rawEmail.slice(atIndex + 1).toLowerCase();
+  const localPart = rawLocalPart.toLowerCase();
+  const sanitizedEmail = `${localPart}@${domain}`;
+
+  if (
+    localPart.length > 64 ||
+    localPart.startsWith('.') ||
+    localPart.endsWith('.') ||
+    localPart.includes('..')
+  ) {
+    return invalid('Please enter a valid email address.', sanitizedEmail);
   }
 
-  let username = parts[0];
-  let domain = parts[1];
-
-  if (DISPOSABLE_DOMAINS.has(domain)) {
-    return {
-      isValid: false,
-      error: 'Temporary or disposable email domains are not allowed. Please use your business email or standard provider (Gmail, Outlook, Yahoo).',
-      sanitizedEmail: sanitized,
-      canonicalEmail: sanitized
-    };
+  const localPartRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~.-]+$/;
+  const domainRegex = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
+  if (!localPartRegex.test(localPart) || !domainRegex.test(domain)) {
+    return invalid('Please enter a valid email address.', sanitizedEmail);
   }
 
-  // 5. Gmail Canonicalization (Anti Dot-Trick & Plus-Subaddressing Trick)
-  // Google ignores all dots (.) and plus tags (+tag) in Gmail usernames.
-  // Example: r.a.h.i.m.khan+trial@gmail.com -> rahimkhan@gmail.com
-  let canonicalUser = username;
+  const blockedDomains = new Set<string>(DEFAULT_DISPOSABLE_DOMAINS);
+  for (const extraDomain of options.additionalDisposableDomains ?? []) {
+    const normalized = extraDomain.trim().toLowerCase();
+    if (normalized) blockedDomains.add(normalized);
+  }
+
+  if (options.blockDisposableEmail !== false && isBlockedDomain(domain, blockedDomains)) {
+    return invalid(
+      'Temporary or disposable email domains are not allowed. Please use a permanent email address.',
+      sanitizedEmail,
+    );
+  }
+
+  let canonicalUser = localPart;
   let canonicalDomain = domain;
-
-  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+  if (
+    options.canonicalizeGmail !== false &&
+    (domain === 'gmail.com' || domain === 'googlemail.com')
+  ) {
     canonicalDomain = 'gmail.com';
-    // Remove all dots
-    canonicalUser = canonicalUser.replace(/\./g, '');
-    // Strip plus sub-addressing (+tag)
-    canonicalUser = canonicalUser.split('+')[0];
+    canonicalUser = canonicalUser.replace(/\./g, '').split('+')[0];
   }
 
-  const canonicalEmail = `${canonicalUser}@${canonicalDomain}`;
+  if (!canonicalUser) return invalid('Please enter a valid email address.', sanitizedEmail);
 
-  return { 
-    isValid: true, 
-    sanitizedEmail: sanitized, 
-    canonicalEmail 
+  return {
+    isValid: true,
+    sanitizedEmail,
+    canonicalEmail: `${canonicalUser}@${canonicalDomain}`,
   };
 }
+
+export { DEFAULT_DISPOSABLE_DOMAINS };

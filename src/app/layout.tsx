@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Secure Auth Kit — Hardened Next.js Authentication Starter',
-  description: 'Production-ready authentication component with Gmail canonicalization, disposable mail blocker, and OAuth 2.0 integrations.',
+  title: 'WebApp Login UI — Supabase Login Components',
+  description: 'Reusable login, signup, OAuth, and password recovery UI for React and Next.js.',
 };
 
 export default function RootLayout({
