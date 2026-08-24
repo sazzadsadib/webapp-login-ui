@@ -8,7 +8,7 @@ Security fixes are provided for the latest published version.
 
 Please use GitHub's **Security → Report a vulnerability** feature for private disclosure:
 
-https://github.com/sazzadsadib/secure-auth-kit/security/advisories/new
+https://github.com/sazzadsadib/webapp-login-ui/security/advisories/new
 
 Do not include working exploits, credentials, tokens, or private user data in a public issue.
 

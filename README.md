@@ -73,7 +73,7 @@ npm install webapp-login-ui @supabase/supabase-js
 Before the first npm release, install this repository after the current code has been pushed to GitHub:
 
 ```bash
-npm install github:sazzadsadib/secure-auth-kit
+npm install github:sazzadsadib/webapp-login-ui
 ```
 
 Import the package stylesheet once in a client-side root layout or application entry point:

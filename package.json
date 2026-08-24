@@ -69,11 +69,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sazzadsadib/secure-auth-kit.git"
+    "url": "git+https://github.com/sazzadsadib/webapp-login-ui.git"
   },
-  "homepage": "https://github.com/sazzadsadib/secure-auth-kit#readme",
+  "homepage": "https://github.com/sazzadsadib/webapp-login-ui#readme",
   "bugs": {
-    "url": "https://github.com/sazzadsadib/secure-auth-kit/issues"
+    "url": "https://github.com/sazzadsadib/webapp-login-ui/issues"
   },
   "publishConfig": {
     "access": "public"
