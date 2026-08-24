@@ -419,6 +419,25 @@ RESULTS: 5 Passed, 0 Failed
 
 ---
 
+## Development & Contributing
+
+```bash
+# 1. Clone repository
+git clone https://github.com/sazzadsadib/secure-auth-kit.git
+cd secure-auth-kit
+
+# 2. Install dependencies
+npm install
+
+# 3. Start development playground
+npm run dev
+
+# 4. Run automated security test suite
+npm run test
+```
+
+---
+
 ## License & Credits
 
 - Released under the **[MIT License](LICENSE)**.
