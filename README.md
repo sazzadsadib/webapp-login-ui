@@ -1,5 +1,7 @@
 # WebApp Login UI
 
+> **Early release (0.1.0):** this package is ready to try in a real project, but it is not a complete hosted authentication service. Review the security checklist below before a production launch.
+
 Reusable React login UI and authentication helpers for two practical cases:
 
 1. Add a ready-made login, signup, OAuth, and password-recovery screen to an existing app.
@@ -13,8 +15,8 @@ Answer these two questions before installing anything.
 
 ### Do you already have a login page?
 
-- **No — I need a login page:** use **Path A** below. The guided setup creates ready-made `/login` and password-update pages for a Next.js App Router project.
-- **Yes — my login page/design is already ready:** use **Path B** below. **Do not run `npx webapp-login-ui`**. Keep your existing design and connect its submit button to this package's validation and authentication adapter.
+- **No â€” I need a login page:** use **Path A** below. The guided setup creates ready-made `/login` and password-update pages for a Next.js App Router project.
+- **Yes â€” my login page/design is already ready:** use **Path B** below. **Do not run `npx webapp-login-ui`**. Keep your existing design and connect its submit button to this package's validation and authentication adapter.
 
 ### Where are user accounts stored?
 
@@ -23,9 +25,9 @@ Answer these two questions before installing anything.
 
 | Your situation | What to use |
 | --- | --- |
-| No login page + Next.js App Router | **Path A** — run `npx webapp-login-ui` |
-| Ready login page + Supabase | **Path B** — use the Supabase adapter in your existing form |
-| Ready login page + existing backend | **Path B** — use the REST adapter in your existing form |
+| No login page + Next.js App Router | **Path A** â€” run `npx webapp-login-ui` |
+| Ready login page + Supabase | **Path B** â€” use the Supabase adapter in your existing form |
+| Ready login page + existing backend | **Path B** â€” use the REST adapter in your existing form |
 | No Next.js App Router project | Do not run the wizard; use the manual component examples instead |
 
 ## Path A: I do not have a login page
@@ -148,7 +150,7 @@ Missing, placeholder, insecure, or service-role configuration fails closed. A fa
 
 1. Create a Supabase project and enable Email login.
 2. Copy the Project URL and anon/publishable key into the variables above.
-3. Set your local and production app URLs in Supabase Authentication → URL Configuration.
+3. Set your local and production app URLs in Supabase Authentication â†’ URL Configuration.
 4. Add the exact password-recovery and OAuth return URLs to Redirect URLs.
 5. Enable only the social providers you configure. Each provider needs the callback URL shown in its Supabase provider settings.
 6. Apply the RLS template only after reviewing it: [Supabase RLS guide](docs/supabase-rls.md).
@@ -176,6 +178,8 @@ export default function LoginPage() {
 ```
 
 The adapter uses HTTPS and includes cookies by default. Your backend must implement the five endpoints described in the [custom REST contract](docs/custom-rest-contract.md). It must hash passwords, verify recovery sessions, enforce authorization, and rate-limit requests.
+
+> **Important:** installing this package does **not** make an existing backend secure. Before launch, a developer must verify secure password hashing, `HttpOnly`/`Secure`/`SameSite` session cookies, CSRF protection where cookies are used, server-side authorization on every protected route, recovery-token expiry, shared rate limiting for multi-server deployments, and database-level unique email rules. If you cannot verify those items, use Supabase or have a security-aware backend developer review the API.
 
 ## Path B: I already have a login page
 
@@ -225,7 +229,7 @@ const auth = createRestAuthAdapter({
 });
 ```
 
-Your backend must follow the [custom REST contract](docs/custom-rest-contract.md). Run the same email policy again on the server; client-side checks can be bypassed.
+Your backend must follow the [custom REST contract](docs/custom-rest-contract.md). Run the same email policy again on the server; client-side checks can be bypassed. The REST adapter only connects your UI to your API; it cannot create password hashing, secure sessions, access control, or server-side rate limits for you.
 
 ## Password recovery
 
@@ -355,3 +359,4 @@ See [docs/releasing.md](docs/releasing.md) before publishing.
 ## License
 
 MIT
+
