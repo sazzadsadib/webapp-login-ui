@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1 seconds
-Output:
 # WebApp Login UI
 
 Reusable React login UI and authentication helpers for two practical cases:
