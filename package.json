@@ -1,0 +1,44 @@
+{
+  "name": "secure-auth-kit",
+  "version": "1.0.0",
+  "description": "Production-hardened, beautiful authentication UI & security engine for Next.js with Gmail canonicalization, disposable mail filter, and 1-click CLI installer.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "secure-auth-kit": "./bin/init.js"
+  },
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "init": "node ./bin/init.js",
+    "test": "node scripts/test-security.js"
+  },
+  "keywords": [
+    "nextjs",
+    "authentication",
+    "security",
+    "gmail-canonicalization",
+    "disposable-email-blocker",
+    "supabase-auth",
+    "oauth",
+    "react-auth-ui"
+  ],
+  "author": "Abiline AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "lucide-react": "^1.16.0",
+    "next": "15.5.23",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.5"
+  }
+}
